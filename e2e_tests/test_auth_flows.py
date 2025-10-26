@@ -47,12 +47,12 @@ def test_login_with_invalid_credentials_shows_error(browser, live_server):
     assert "Invalid username or password" in browser.page_source
 
 
-def test_logout_redirects_and_shows_login_link(browser, live_server, monkeypatch):
+def test_logout_redirects_and_shows_login_link(browser, live_server):
     """Test that logout redirects to index and navbar shows Login link."""
     login_user(browser, live_server)
     browser.get(f"{live_server}/auth/logout")
 
-    WebDriverWait(browser, 5).until(EC.url_matches(r".*/?(index)?$"))
+    WebDriverWait(browser, 5).until(EC.url_contains("/auth/login"))
 
     browser.get(f"{live_server}/")
     WebDriverWait(browser, 5).until(
@@ -62,7 +62,7 @@ def test_logout_redirects_and_shows_login_link(browser, live_server, monkeypatch
     assert "Login" in browser.page_source
 
 
-def test_registration_page_renders_with_form(browser, live_server, monkeypatch):
+def test_registration_page_renders_with_form(browser, live_server):
     """Test that registration page renders with username, email, password, password2 fields."""
     browser.get(f"{live_server}/auth/register")
     WebDriverWait(browser, 5).until(
