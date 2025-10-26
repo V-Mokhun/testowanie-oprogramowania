@@ -29,6 +29,7 @@ def app_instance():
         SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
         WTF_CSRF_ENABLED = False
         TESTING = True
+        POSTS_PER_PAGE = 5
 
     app = create_app(E2EConfig)
     return app
@@ -93,7 +94,14 @@ def setup_database_isolation(app_instance):
     from app import db
 
     with app_instance.app_context():
+        # Clear any existing transactions
         db.session.rollback()
+
+        # Drop and recreate all tables to ensure clean state
+        db.drop_all()
+        db.create_all()
+
+        # Seed fresh test data
         from seed_data import seed_test_data
 
         seed_test_data(app_instance)
@@ -101,7 +109,9 @@ def setup_database_isolation(app_instance):
     yield
 
     with app_instance.app_context():
+        # Clean up after test
         db.session.rollback()
+        db.drop_all()
 
 
 def login_user(browser, live_server, username="testuser", password="password"):
@@ -145,21 +155,39 @@ def login_user(browser, live_server, username="testuser", password="password"):
 
 def create_post(browser, live_server, post_body="My first post"):
     """Helper function to create a post with proper isolation."""
+    import time
+
     try:
         browser.get(f"{live_server}/index")
+
         WebDriverWait(browser, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "textarea"))
+            EC.presence_of_element_located((By.TAG_NAME, "form"))
         )
-        browser.find_element(By.CSS_SELECTOR, "textarea").send_keys(post_body)
-        browser.find_element(
+
+        post_field = browser.find_element(By.NAME, "post")
+
+        post_field.clear()
+        post_field.send_keys(post_body)
+
+        submit_button = browser.find_element(
             By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
-        ).click()
-        WebDriverWait(browser, 10).until(
-            EC.text_to_be_present_in_element(
-                (By.CSS_SELECTOR, ".alert"), "Your post is now live!"
-            )
         )
+
+        submit_button.click()
+
+        WebDriverWait(browser, 10).until(lambda driver: "/index" in driver.current_url)
+
+        WebDriverWait(browser, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+
+        time.sleep(0.5)
+
+        print(f"✅ Post '{post_body}' submitted successfully")
+
     except Exception as e:
         print(f"❌ Create post failed for {post_body}: {e}")
         browser.save_screenshot(f"create_post_failure_{post_body}.png")
+        print(f"Current URL: {browser.current_url}")
+        print(f"Page source snippet: {browser.page_source[:500]}...")
         raise

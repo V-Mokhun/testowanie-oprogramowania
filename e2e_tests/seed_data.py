@@ -9,6 +9,27 @@ from app import create_app, db
 from app.models import User, Post
 
 
+SEEDED_USERS = {
+    "testuser": {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "password",
+        "about_me": "Test user bio",
+    },
+    "otheruser": {
+        "username": "otheruser",
+        "email": "otheruser@example.com",
+        "password": "password",
+        "about_me": "Other user bio",
+    },
+    "thirduser": {
+        "username": "thirduser",
+        "email": "thirduser@example.com",
+        "password": "password",
+        "about_me": "Third user bio",
+    },
+}
+
 def seed_test_data(app=None):
     """Create test data for E2E tests."""
     from config import Config
