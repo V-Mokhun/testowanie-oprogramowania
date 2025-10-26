@@ -10,6 +10,11 @@ from selenium.webdriver.support import expected_conditions as EC
 
 def test_edit_profile_page_prefills_current_data(browser, live_server):
     """Test that edit profile page prefills current username and about_me."""
+    from conftest import login_user
+    
+    # Login with the seeded user
+    login_user(browser, live_server)
+    
     browser.get(f"{live_server}/edit_profile")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.NAME, "username"))
@@ -26,16 +31,20 @@ def test_edit_profile_page_prefills_current_data(browser, live_server):
 
 def test_edit_profile_duplicate_username_shows_validation_error(browser, live_server, monkeypatch):
     """Test that edit profile with duplicate username shows validation error."""
+    from conftest import login_user
     from unittest.mock import Mock, patch
-    
+
+    # Login with the seeded user
+    login_user(browser, live_server)
+
     # Mock that username already exists
     existing_user = Mock()
     existing_user.username = "existinguser"
-    
+
     # Patch the database query to return an existing user
     with patch('app.main.forms.db.session.scalar') as mock_scalar:
         mock_scalar.return_value = existing_user
-    
+
         browser.get(f"{live_server}/edit_profile")
         WebDriverWait(browser, 5).until(
             EC.presence_of_element_located((By.NAME, "username"))
@@ -71,6 +80,11 @@ def test_user_profile_does_not_show_private_message_link_for_own_profile(browser
 
 def test_user_profile_page_renders_with_avatar_bio_and_counts(browser, live_server):
     """Test that user profile page renders with avatar, bio, last seen, and counts."""
+    from conftest import login_user
+    
+    # Login with the seeded user
+    login_user(browser, live_server)
+    
     browser.get(f"{live_server}/user/testuser")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.TAG_NAME, "h1"))
@@ -95,6 +109,11 @@ def test_user_profile_page_renders_with_avatar_bio_and_counts(browser, live_serv
 
 def test_own_profile_shows_edit_and_export_links(browser, live_server):
     """Test that own profile shows Edit and Export links."""
+    from conftest import login_user
+    
+    # Login with the seeded user
+    login_user(browser, live_server)
+    
     browser.get(f"{live_server}/user/testuser")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.TAG_NAME, "h1"))
@@ -111,6 +130,11 @@ def test_own_profile_shows_edit_and_export_links(browser, live_server):
 
 def test_edit_profile_updates_data_and_shows_success(browser, live_server):
     """Test that edit profile updates data and shows success flash."""
+    from conftest import login_user
+    
+    # Login with the seeded user
+    login_user(browser, live_server)
+    
     browser.get(f"{live_server}/edit_profile")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.NAME, "username"))
@@ -139,6 +163,11 @@ def test_edit_profile_updates_data_and_shows_success(browser, live_server):
 
 def test_user_profile_shows_follow_button_for_other_users(browser, live_server):
     """Test that user profile page loads correctly for other users."""
+    from conftest import login_user
+    
+    # Login with the seeded user
+    login_user(browser, live_server)
+    
     browser.get(f"{live_server}/user/otheruser")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.TAG_NAME, "h1"))
@@ -200,6 +229,11 @@ def test_other_user_profile_shows_unfollow_button_when_following(browser, live_s
 
 def test_user_profile_shows_private_message_link_for_other_users(browser, live_server):
     """Test that user profile shows private message link for other users."""
+    from conftest import login_user
+    
+    # Login with the seeded user
+    login_user(browser, live_server)
+    
     browser.get(f"{live_server}/user/otheruser")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.TAG_NAME, "h1"))
@@ -212,6 +246,11 @@ def test_user_profile_shows_private_message_link_for_other_users(browser, live_s
 
 def test_own_profile_shows_export_posts_link_when_no_export_in_progress(browser, live_server):
     """Test that own profile shows Export posts link when no export is in progress."""
+    from conftest import login_user
+    
+    # Login with the seeded user
+    login_user(browser, live_server)
+    
     browser.get(f"{live_server}/user/testuser")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.TAG_NAME, "h1"))

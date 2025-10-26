@@ -1,108 +1,53 @@
-from datetime import datetime, timezone
-from types import SimpleNamespace
-from unittest.mock import Mock
-
-import pytest
+from conftest import login_user, create_post
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
-
-def _make_fake_post(
-    *,
-    post_id: int = 1,
-    body: str = "Hello world",
-    author_username: str = "e2e",
-    language: str = "en",
-):
-    class Author:
-        username = author_username
-
-        def avatar(self, size):
-            return f"/static/avatar_{size}.png"
-
-    return SimpleNamespace(
-        id=post_id,
-        body=body,
-        author=Author(),
-        language=language,
-        timestamp=datetime.now(timezone.utc),
-    )
-
-
-def _paginate(items, *, has_next=False, has_prev=False, next_num=None, prev_num=None):
-    return SimpleNamespace(
-        items=items,
-        pages=1,
-        total=len(items),
-        has_next=has_next,
-        has_prev=has_prev,
-        next_num=next_num,
-        prev_num=prev_num,
-    )
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 def test_index_renders_with_greeting_and_post_form(browser, live_server):
+    login_user(browser, live_server)
+
     browser.get(f"{live_server}/index")
-    WebDriverWait(browser, 5).until(
-        EC.presence_of_element_located((By.TAG_NAME, "h1"))
-    )
+    WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.TAG_NAME, "h1")))
     page = browser.page_source
-    assert "Hi, e2e!" in page or "Hi," in page
-    # Post form should be present (textarea and a submit button)
+    assert "Hi, testuser!" in page
+
     assert browser.find_element(By.CSS_SELECTOR, "textarea")
-    assert browser.find_element(By.CSS_SELECTOR, "input[type=submit], button[type=submit]")
-
-
-def test_create_post_via_form_shows_flash_and_post_appears(browser, live_server, monkeypatch):
-    # Arrange paginate to return our new post after submission
-    from app import db
-
-    new_post = _make_fake_post(post_id=42, body="My first post")
-
-    def paginate_after_post(query, page=1, per_page=10, error_out=False):
-        return _paginate([new_post])
-
-    monkeypatch.setattr(db, "paginate", paginate_after_post, raising=True)
-
-    browser.get(f"{live_server}/index")
-    WebDriverWait(browser, 5).until(
-        EC.presence_of_element_located((By.CSS_SELECTOR, "textarea"))
-    )
-    browser.find_element(By.CSS_SELECTOR, "textarea").send_keys("My first post")
-    browser.find_element(By.CSS_SELECTOR, "input[type=submit], button[type=submit]").click()
-
-    WebDriverWait(browser, 5).until(
-        lambda d: "/index" in d.current_url or "Your post is now live!" in d.page_source
+    assert browser.find_element(
+        By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
     )
 
-    page = browser.page_source
-    assert "Your post is now live!" in page or "My first post" in page
+
+def test_create_post_via_form_shows_flash_and_post_appears(browser, live_server):
+    login_user(browser, live_server)
+
+    create_post(browser, live_server, post_body="My first post")
+
+    assert "My first post" in browser.page_source
 
 
 def test_post_form_validation_shows_error_for_empty_post(browser, live_server):
+    login_user(browser, live_server)
+
     browser.get(f"{live_server}/index")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.CSS_SELECTOR, "textarea"))
     )
-    # Submit empty post
-    browser.find_element(By.CSS_SELECTOR, "input[type=submit], button[type=submit]").click()
-    # Should remain on page and show validation error near the field
+    browser.find_element(
+        By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
+    ).click()
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.CSS_SELECTOR, "textarea"))
     )
-    assert "/index" in browser.current_url
+
+    assert "Your post is now live!" not in browser.page_source
 
 
-def test_explore_page_renders_with_posts(browser, live_server, monkeypatch):
-    from app import db
+def test_explore_page_renders_with_posts(browser, live_server):
+    login_user(browser, live_server)
 
-    posts = [_make_fake_post(post_id=i, body=f"post {i}") for i in range(1, 4)]
-
-    def paginate_explore(query, page=1, per_page=10, error_out=False):
-        return _paginate(posts)
-
-    monkeypatch.setattr(db, "paginate", paginate_explore, raising=True)
+    for i in range(1, 4):
+        create_post(browser, live_server, post_body=f"post {i}")
 
     browser.get(f"{live_server}/explore")
     WebDriverWait(browser, 5).until(
@@ -112,7 +57,14 @@ def test_explore_page_renders_with_posts(browser, live_server, monkeypatch):
     assert "post 1" in src and "post 2" in src and "post 3" in src
 
 
-def test_posts_display_avatar_username_timestamp_and_body(browser, live_server, monkeypatch):
+def test_posts_display_avatar_username_timestamp_and_body(
+    browser, live_server, monkeypatch
+):
+    from conftest import login_user
+
+    # Login with the seeded user
+    login_user(browser, live_server)
+
     from app import db
 
     post = _make_fake_post(body="content body", author_username="alice")
@@ -135,13 +87,20 @@ def test_posts_display_avatar_username_timestamp_and_body(browser, live_server, 
 
 
 def test_pagination_links_render_when_multiple_pages(browser, live_server, monkeypatch):
+    from conftest import login_user
+
+    # Login with the seeded user
+    login_user(browser, live_server)
+
     from app import db
 
     posts = [_make_fake_post(post_id=i) for i in range(1, 4)]
 
     def paginate_many(query, page=1, per_page=3, error_out=False):
         # Simulate 2 pages, we are on page 1
-        return _paginate(posts, has_next=True, has_prev=False, next_num=2, prev_num=None)
+        return _paginate(
+            posts, has_next=True, has_prev=False, next_num=2, prev_num=None
+        )
 
     monkeypatch.setattr(db, "paginate", paginate_many, raising=True)
 
@@ -155,5 +114,3 @@ def test_pagination_links_render_when_multiple_pages(browser, live_server, monke
     # Newer posts (prev) should be disabled on first page
     prev_item = browser.find_element(By.XPATH, "//li[contains(@class,'page-item')][1]")
     assert "disabled" in prev_item.get_attribute("class")
-
-
