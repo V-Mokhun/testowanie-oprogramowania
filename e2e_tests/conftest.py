@@ -30,6 +30,10 @@ def app_instance():
         WTF_CSRF_ENABLED = False
         TESTING = True
         POSTS_PER_PAGE = 5
+        REDIS_URL = "redis://localhost:6379"
+        ELASTICSEARCH_URL = "http://localhost:9200"
+        MAIL_SERVER = None
+        MAIL_USE_TLS = False
 
     app = create_app(E2EConfig)
     return app

@@ -18,7 +18,7 @@ class TestConfig(Config):
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     ELASTICSEARCH_URL = None
-    REDIS_URL = "redis://localhost/0"
+    REDIS_URL = None
     POSTS_PER_PAGE = 3
     SECRET_KEY = "test"
 
