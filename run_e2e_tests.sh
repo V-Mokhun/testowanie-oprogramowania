@@ -13,9 +13,9 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
-# Start Redis container
-echo "📦 Starting Redis container..."
-docker-compose -f docker-compose.test.yml up -d redis
+# Start Redis and Elasticsearch containers
+echo "📦 Starting Redis and Elasticsearch containers..."
+docker-compose -f docker-compose.test.yml up -d redis elasticsearch
 
 # Wait for Redis to be ready
 echo "⏳ Waiting for Redis to be ready..."
@@ -32,6 +32,22 @@ while ! docker exec $(docker-compose -f docker-compose.test.yml ps -q redis) red
 done
 
 echo "✅ Redis is ready!"
+
+# Wait for Elasticsearch to be ready
+echo "⏳ Waiting for Elasticsearch to be ready..."
+timeout=60
+counter=0
+while ! curl -f http://localhost:9200/_cluster/health > /dev/null 2>&1; do
+    if [ $counter -eq $timeout ]; then
+        echo "❌ Elasticsearch failed to start within $timeout seconds"
+        docker-compose -f docker-compose.test.yml logs elasticsearch
+        exit 1
+    fi
+    sleep 2
+    counter=$((counter + 2))
+done
+
+echo "✅ Elasticsearch is ready!"
 
 # Activate virtual environment if it exists
 if [ -d "venv" ]; then

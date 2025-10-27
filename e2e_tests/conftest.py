@@ -13,6 +13,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+from seed_data import SEEDED_USERS
+
 
 @pytest.fixture(scope="session")
 def app_instance():
@@ -37,15 +39,6 @@ def app_instance():
 
     app = create_app(E2EConfig)
     return app
-
-
-@pytest.fixture(scope="session", autouse=True)
-def seed_database(app_instance):
-    """Seed the database with test data before running E2E tests."""
-    from seed_data import seed_test_data
-
-    seed_test_data(app_instance)
-    yield
 
 
 @pytest.fixture(scope="session")
@@ -110,12 +103,17 @@ def setup_database_isolation(app_instance):
 
         seed_test_data(app_instance)
 
+        setup_search_index(app_instance)
+        create_searchable_posts(app_instance)
+
     yield
 
     with app_instance.app_context():
         # Clean up after test
         db.session.rollback()
         db.drop_all()
+        # Clear search index after each test
+        clear_search_index(app_instance)
 
 
 def login_user(browser, live_server, username="testuser", password="password"):
@@ -195,3 +193,76 @@ def create_post(browser, live_server, post_body="My first post"):
         print(f"Current URL: {browser.current_url}")
         print(f"Page source snippet: {browser.page_source[:500]}...")
         raise
+
+
+def setup_search_index(app_instance):
+    """Set up Elasticsearch index for search testing."""
+    with app_instance.app_context():
+        from app.models import Post
+
+        # Only reindex if Elasticsearch is available
+        if app_instance.elasticsearch:
+            try:
+                # Reindex all posts for search
+                Post.reindex()
+                print("✅ Search index populated")
+            except Exception as e:
+                print(f"⚠️ Could not populate search index: {e}")
+        else:
+            print("⚠️ Elasticsearch not available, skipping search index setup")
+
+
+def clear_search_index(app_instance):
+    """Clear Elasticsearch index after tests."""
+    with app_instance.app_context():
+        from app.models import Post
+
+        # Clear the search index
+        if app_instance.elasticsearch:
+            try:
+                app_instance.elasticsearch.indices.delete(
+                    index=Post.__tablename__, ignore=[400, 404]
+                )
+                print("✅ Search index cleared")
+            except Exception as e:
+                print(f"⚠️ Could not clear search index: {e}")
+        else:
+            print("⚠️ Elasticsearch not available, skipping search index cleanup")
+
+
+def create_searchable_posts(app_instance):
+    """Create additional posts with searchable content for testing."""
+    with app_instance.app_context():
+        from app.models import User, Post
+        from app import db
+        from datetime import datetime, timezone
+
+        # Get test user
+        user = db.session.scalar(
+            db.select(User).where(User.username == SEEDED_USERS["testuser"]["username"])
+        )
+        if not user:
+            return
+
+        # Create additional posts with different searchable content
+        # (in addition to the posts already created in seed_data.py)
+        searchable_posts = [
+            "Python programming is amazing",
+            "JavaScript frameworks are powerful",
+            "Database design principles",
+            "Web development best practices",
+            "Machine learning algorithms",
+            "Software testing methodologies",
+            "Cloud computing solutions",
+            "API development patterns",
+        ]
+
+        for i, body in enumerate(searchable_posts):
+            post = Post(body=body, author=user, timestamp=datetime.now(timezone.utc))
+            db.session.add(post)
+
+        db.session.commit()
+
+        # Reindex for search
+        Post.reindex()
+        print(f"✅ Created {len(searchable_posts)} additional searchable posts")
