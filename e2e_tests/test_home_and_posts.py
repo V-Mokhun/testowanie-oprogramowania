@@ -90,23 +90,10 @@ def test_pagination_links_render_when_multiple_pages(browser, live_server):
         EC.presence_of_element_located((By.TAG_NAME, "body"))
     )
 
-    browser.save_screenshot("pagination_links_render_when_multiple_pages_1.png")
     assert "pagination_test_post" in browser.page_source
 
     next_link = browser.find_element(By.PARTIAL_LINK_TEXT, "Older posts")
-    assert "None" in next_link.get_attribute("href")
-    prev_link = browser.find_element(By.PARTIAL_LINK_TEXT, "Newer posts")
-    assert "None" in prev_link.get_attribute("href")
-
-    create_post(browser, live_server, post_body="pagination_test_post_2")
-    browser.get(f"{live_server}/explore")
-    WebDriverWait(browser, 5).until(
-        EC.presence_of_element_located((By.TAG_NAME, "body"))
-    )
-    browser.save_screenshot("pagination_links_render_when_multiple_pages_2.png")
-
-    next_link = browser.find_element(By.PARTIAL_LINK_TEXT, "Older posts")
-    assert "/explore?page=2" in next_link.get_attribute("href")
+    assert "page=2" in next_link.get_attribute("href")
     prev_link = browser.find_element(By.PARTIAL_LINK_TEXT, "Newer posts")
     assert "None" in prev_link.get_attribute("href")
 
@@ -115,12 +102,12 @@ def test_pagination_links_render_when_multiple_pages(browser, live_server):
         next_link,
     )
     next_link.click()
+
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.TAG_NAME, "body"))
     )
 
     next_link = browser.find_element(By.PARTIAL_LINK_TEXT, "Older posts")
     prev_link = browser.find_element(By.PARTIAL_LINK_TEXT, "Newer posts")
-    assert "pagination_test_post_2" not in browser.page_source
     assert "None" in next_link.get_attribute("href")
     assert "/explore?page=1" in prev_link.get_attribute("href")

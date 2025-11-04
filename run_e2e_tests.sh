@@ -15,16 +15,16 @@ fi
 
 # Start Redis and Elasticsearch containers
 echo "📦 Starting Redis and Elasticsearch containers..."
-docker-compose -f docker-compose.test.yml up -d redis elasticsearch
+docker compose -f docker-compose.test.yml up -d redis elasticsearch
 
 # Wait for Redis to be ready
 echo "⏳ Waiting for Redis to be ready..."
 timeout=30
 counter=0
-while ! docker exec $(docker-compose -f docker-compose.test.yml ps -q redis) redis-cli ping > /dev/null 2>&1; do
+while ! docker exec $(docker compose -f docker-compose.test.yml ps -q redis) redis-cli ping > /dev/null 2>&1; do
     if [ $counter -eq $timeout ]; then
         echo "❌ Redis failed to start within $timeout seconds"
-        docker-compose -f docker-compose.test.yml logs redis
+        docker compose -f docker-compose.test.yml logs redis
         exit 1
     fi
     sleep 1
@@ -40,7 +40,7 @@ counter=0
 while ! curl -f http://localhost:9200/_cluster/health > /dev/null 2>&1; do
     if [ $counter -eq $timeout ]; then
         echo "❌ Elasticsearch failed to start within $timeout seconds"
-        docker-compose -f docker-compose.test.yml logs elasticsearch
+        docker compose -f docker-compose.test.yml logs elasticsearch
         exit 1
     fi
     sleep 2
@@ -64,7 +64,7 @@ TEST_EXIT_CODE=$?
 
 # Clean up
 echo "🧹 Cleaning up..."
-docker-compose -f docker-compose.test.yml down -v
+docker compose -f docker-compose.test.yml down -v
 
 # Exit with test result
 exit $TEST_EXIT_CODE

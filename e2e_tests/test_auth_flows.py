@@ -3,6 +3,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from conftest import login_user
 import pytest
+from seed_data import SEEDED_USERS
 
 
 def test_login_page_renders_with_form_fields(browser, live_server, monkeypatch):
@@ -141,7 +142,7 @@ def test_password_reset_request_page_renders_and_accepts_email(
     )
 
     browser.find_element(By.NAME, "email").send_keys(
-        "testuser@example.com"
+        SEEDED_USERS["testuser"]["email"]
     )  # Use seeded email
     browser.find_element(
         By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
@@ -155,13 +156,13 @@ def test_password_reset_request_page_renders_and_accepts_email(
     )
 
 
-def test_password_reset_flow(browser, live_server):
+def test_password_reset_flow(browser, live_server, app_instance):
     """Test password reset flow using the seeded testuser."""
     # Step 1: Request password reset for existing user
     browser.get(f"{live_server}/auth/reset_password_request")
     WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.NAME, "email")))
 
-    browser.find_element(By.NAME, "email").send_keys("testuser@example.com")
+    browser.find_element(By.NAME, "email").send_keys(SEEDED_USERS["testuser"]["email"])
     browser.find_element(
         By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
     ).click()
@@ -174,13 +175,12 @@ def test_password_reset_flow(browser, live_server):
 
     # Step 2: Generate a valid reset token for the existing user
     from app.models import User
-    from app import create_app
+    from app import db
 
-    # Create app context to access the database
-    app = create_app()
-    with app.app_context():
+    # Use the existing E2E app instance to access the same in-memory database
+    with app_instance.app_context():
         # Get the existing testuser
-        user = User.query.filter_by(username="testuser").first()
+        user = db.session.scalar(db.select(User).where(User.username == "testuser"))
         if not user:
             pytest.fail("Test user not found")
         # Generate a valid reset token
@@ -237,8 +237,8 @@ def test_password_reset_flow(browser, live_server):
             EC.presence_of_element_located((By.NAME, "username"))
         )
 
-        browser.find_element(By.NAME, "username").send_keys("testuser")
-        browser.find_element(By.NAME, "password").send_keys("password")  # Old password
+        browser.find_element(By.NAME, "username").send_keys(SEEDED_USERS["testuser"]["username"])
+        browser.find_element(By.NAME, "password").send_keys(SEEDED_USERS["testuser"]["password"])  # Old password
         browser.find_element(
             By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
         ).click()
@@ -250,7 +250,7 @@ def test_password_reset_flow(browser, live_server):
         # Step 6: Verify new password works
         browser.find_element(By.NAME, "username").clear()
         browser.find_element(By.NAME, "password").clear()
-        browser.find_element(By.NAME, "username").send_keys("testuser")
+        browser.find_element(By.NAME, "username").send_keys(SEEDED_USERS["testuser"]["username"])
         browser.find_element(By.NAME, "password").send_keys(
             "newtestpassword123"
         )  # New password

@@ -13,19 +13,19 @@ SEEDED_USERS = {
     "testuser": {
         "username": "testuser",
         "email": "testuser@example.com",
-        "password": "password",
+        "password": "SecurePass123!&^",
         "about_me": "Test user bio",
     },
     "otheruser": {
         "username": "otheruser",
         "email": "otheruser@example.com",
-        "password": "password",
+        "password": "SecurePass123!&^",
         "about_me": "Other user bio",
     },
     "thirduser": {
         "username": "thirduser",
         "email": "thirduser@example.com",
-        "password": "password",
+        "password": "SecurePass123!&^",
         "about_me": "Third user bio",
     },
 }
@@ -48,17 +48,17 @@ def seed_test_data(app=None):
         db.create_all()
 
         testuser = User(username="testuser", email="testuser@example.com")
-        testuser.set_password("password")
+        testuser.set_password("SecurePass123!&^")
         testuser.about_me = "Test user bio"
         testuser.last_seen = datetime.now(timezone.utc)
 
         otheruser = User(username="otheruser", email="otheruser@example.com")
-        otheruser.set_password("password")
+        otheruser.set_password("SecurePass123!&^")
         otheruser.about_me = "Other user bio"
         otheruser.last_seen = datetime.now(timezone.utc)
 
         thirduser = User(username="thirduser", email="thirduser@example.com")
-        thirduser.set_password("password")
+        thirduser.set_password("SecurePass123!&^")
         thirduser.about_me = "Third user bio"
         thirduser.last_seen = datetime.now(timezone.utc)
 

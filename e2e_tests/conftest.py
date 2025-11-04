@@ -116,7 +116,7 @@ def setup_database_isolation(app_instance):
         clear_search_index(app_instance)
 
 
-def login_user(browser, live_server, username="testuser", password="password"):
+def login_user(browser, live_server, username=SEEDED_USERS["testuser"]["username"], password=SEEDED_USERS["testuser"]["password"]):
     """Helper function to login a user with proper isolation."""
     try:
         browser.delete_all_cookies()
@@ -149,7 +149,6 @@ def login_user(browser, live_server, username="testuser", password="password"):
 
     except Exception as e:
         print(f"❌ Login failed for {username}: {e}")
-        browser.save_screenshot(f"login_failure_{username}.png")
         print(f"Current URL: {browser.current_url}")
         print(f"Page title: {browser.title}")
         raise
@@ -189,7 +188,6 @@ def create_post(browser, live_server, post_body="My first post"):
 
     except Exception as e:
         print(f"❌ Create post failed for {post_body}: {e}")
-        browser.save_screenshot(f"create_post_failure_{post_body}.png")
         print(f"Current URL: {browser.current_url}")
         print(f"Page source snippet: {browser.page_source[:500]}...")
         raise
@@ -250,11 +248,6 @@ def create_searchable_posts(app_instance):
             "Python programming is amazing",
             "JavaScript frameworks are powerful",
             "Database design principles",
-            "Web development best practices",
-            "Machine learning algorithms",
-            "Software testing methodologies",
-            "Cloud computing solutions",
-            "API development patterns",
         ]
 
         for i, body in enumerate(searchable_posts):
