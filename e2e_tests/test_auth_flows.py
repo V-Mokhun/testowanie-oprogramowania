@@ -112,7 +112,7 @@ def test_register_with_duplicate_username_shows_validation_error(browser, live_s
 
     browser.find_element(By.NAME, "username").send_keys(
         "testuser"
-    )  # Use seeded username
+    )  
     browser.find_element(By.NAME, "email").send_keys("newuser@example.com")
     browser.find_element(By.NAME, "password").send_keys("password123")
     browser.find_element(By.NAME, "password2").send_keys("password123")
@@ -141,9 +141,7 @@ def test_password_reset_request_page_renders_and_accepts_email(
         By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
     )
 
-    browser.find_element(By.NAME, "email").send_keys(
-        SEEDED_USERS["testuser"]["email"]
-    )  # Use seeded email
+    browser.find_element(By.NAME, "email").send_keys(SEEDED_USERS["testuser"]["email"])
     browser.find_element(
         By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
     ).click()
@@ -158,7 +156,6 @@ def test_password_reset_request_page_renders_and_accepts_email(
 
 def test_password_reset_flow(browser, live_server, app_instance):
     """Test password reset flow using the seeded testuser."""
-    # Step 1: Request password reset for existing user
     browser.get(f"{live_server}/auth/reset_password_request")
     WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.NAME, "email")))
 
@@ -173,33 +170,28 @@ def test_password_reset_flow(browser, live_server, app_instance):
         in browser.page_source
     )
 
-    # Step 2: Generate a valid reset token for the existing user
     from app.models import User
     from app import db
 
-    # Use the existing E2E app instance to access the same in-memory database
     with app_instance.app_context():
-        # Get the existing testuser
-        user = db.session.scalar(db.select(User).where(User.username == "testuser"))
+        user = db.session.scalar(
+            db.select(User).where(User.username == SEEDED_USERS["testuser"]["username"])
+        )
         if not user:
             pytest.fail("Test user not found")
-        # Generate a valid reset token
         reset_token = user.get_reset_password_token()
 
-        # Step 3: Use the generated token to reset password
         browser.get(f"{live_server}/auth/reset_password/{reset_token}")
         WebDriverWait(browser, 5).until(
             EC.presence_of_element_located((By.NAME, "password"))
         )
 
-        # Verify the reset password form is displayed
         assert browser.find_element(By.NAME, "password")
         assert browser.find_element(By.NAME, "password2")
         assert browser.find_element(
             By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
         )
 
-        # Submit new password
         browser.find_element(By.NAME, "password").send_keys("newtestpassword123")
         browser.find_element(By.NAME, "password2").send_keys("newtestpassword123")
         browser.find_element(
@@ -209,7 +201,6 @@ def test_password_reset_flow(browser, live_server, app_instance):
         WebDriverWait(browser, 5).until(EC.url_contains("/auth/login"))
         assert "Your password has been reset." in browser.page_source
 
-        # Step 4: Login with the new password
         WebDriverWait(browser, 5).until(
             EC.presence_of_element_located((By.NAME, "username"))
         )
@@ -225,7 +216,6 @@ def test_password_reset_flow(browser, live_server, app_instance):
         WebDriverWait(browser, 5).until(EC.url_contains("/index"))
         assert "Hi, testuser!" in browser.page_source
 
-        # Step 5: Verify old password no longer works
         browser.get(f"{live_server}/auth/logout")
         WebDriverWait(browser, 5).until(
             lambda driver: "/index" in driver.current_url
@@ -237,23 +227,31 @@ def test_password_reset_flow(browser, live_server, app_instance):
             EC.presence_of_element_located((By.NAME, "username"))
         )
 
-        browser.find_element(By.NAME, "username").send_keys(SEEDED_USERS["testuser"]["username"])
-        browser.find_element(By.NAME, "password").send_keys(SEEDED_USERS["testuser"]["password"])  # Old password
+        browser.find_element(By.NAME, "username").send_keys(
+            SEEDED_USERS["testuser"]["username"]
+        )
+        browser.find_element(By.NAME, "password").send_keys(
+            SEEDED_USERS["testuser"]["password"]
+        )  
         browser.find_element(
             By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
         ).click()
 
-        # Should stay on login page with error
         WebDriverWait(browser, 5).until(EC.url_contains("/auth/login"))
-        assert "Invalid username or password" in browser.page_source
+        WebDriverWait(browser, 5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".alert.alert-info"))
+        )
+        assert (
+            "Invalid username or password"
+            in browser.find_element(By.CSS_SELECTOR, ".alert.alert-info").text
+        )
 
-        # Step 6: Verify new password works
         browser.find_element(By.NAME, "username").clear()
         browser.find_element(By.NAME, "password").clear()
-        browser.find_element(By.NAME, "username").send_keys(SEEDED_USERS["testuser"]["username"])
-        browser.find_element(By.NAME, "password").send_keys(
-            "newtestpassword123"
-        )  # New password
+        browser.find_element(By.NAME, "username").send_keys(
+            SEEDED_USERS["testuser"]["username"]
+        )
+        browser.find_element(By.NAME, "password").send_keys("newtestpassword123")
         browser.find_element(
             By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
         ).click()

@@ -91,14 +91,11 @@ def setup_database_isolation(app_instance):
     from app import db
 
     with app_instance.app_context():
-        # Clear any existing transactions
         db.session.rollback()
 
-        # Drop and recreate all tables to ensure clean state
         db.drop_all()
         db.create_all()
 
-        # Seed fresh test data
         from seed_data import seed_test_data
 
         seed_test_data(app_instance)
@@ -109,14 +106,17 @@ def setup_database_isolation(app_instance):
     yield
 
     with app_instance.app_context():
-        # Clean up after test
         db.session.rollback()
         db.drop_all()
-        # Clear search index after each test
         clear_search_index(app_instance)
 
 
-def login_user(browser, live_server, username=SEEDED_USERS["testuser"]["username"], password=SEEDED_USERS["testuser"]["password"]):
+def login_user(
+    browser,
+    live_server,
+    username=SEEDED_USERS["testuser"]["username"],
+    password=SEEDED_USERS["testuser"]["password"],
+):
     """Helper function to login a user with proper isolation."""
     try:
         browser.delete_all_cookies()
@@ -198,10 +198,8 @@ def setup_search_index(app_instance):
     with app_instance.app_context():
         from app.models import Post
 
-        # Only reindex if Elasticsearch is available
         if app_instance.elasticsearch:
             try:
-                # Reindex all posts for search
                 Post.reindex()
                 print("✅ Search index populated")
             except Exception as e:
@@ -215,15 +213,18 @@ def clear_search_index(app_instance):
     with app_instance.app_context():
         from app.models import Post
 
-        # Clear the search index
         if app_instance.elasticsearch:
             try:
-                app_instance.elasticsearch.indices.delete(
-                    index=Post.__tablename__, ignore=[400, 404]
-                )
+                app_instance.elasticsearch.indices.delete(index=Post.__tablename__)
                 print("✅ Search index cleared")
             except Exception as e:
-                print(f"⚠️ Could not clear search index: {e}")
+                error_status = getattr(e, "status_code", None) or getattr(
+                    getattr(e, "info", None), "status", None
+                )
+                if error_status in [400, 404]:
+                    print("✅ Search index cleared (did not exist)")
+                else:
+                    print(f"⚠️ Could not clear search index: {e}")
         else:
             print("⚠️ Elasticsearch not available, skipping search index cleanup")
 
@@ -235,15 +236,12 @@ def create_searchable_posts(app_instance):
         from app import db
         from datetime import datetime, timezone
 
-        # Get test user
         user = db.session.scalar(
             db.select(User).where(User.username == SEEDED_USERS["testuser"]["username"])
         )
         if not user:
             return
 
-        # Create additional posts with different searchable content
-        # (in addition to the posts already created in seed_data.py)
         searchable_posts = [
             "Python programming is amazing",
             "JavaScript frameworks are powerful",
@@ -256,6 +254,5 @@ def create_searchable_posts(app_instance):
 
         db.session.commit()
 
-        # Reindex for search
         Post.reindex()
         print(f"✅ Created {len(searchable_posts)} additional searchable posts")

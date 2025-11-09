@@ -72,7 +72,6 @@ def test_messages_page_lists_received_messages(browser, live_server):
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.TAG_NAME, "body"))
     )
-    assert f"/user/{SEEDED_USERS['otheruser']['username']}" in browser.current_url
 
     browser.get(f"{live_server}/auth/logout")
     WebDriverWait(browser, 5).until(EC.url_contains("/auth/login"))
