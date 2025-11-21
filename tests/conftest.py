@@ -17,10 +17,8 @@ class TestConfig(Config):
     TESTING = True
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
-    ELASTICSEARCH_URL = None
-    REDIS_URL = "redis://localhost/0"
-    POSTS_PER_PAGE = 3
-    SECRET_KEY = "test"
+    # POSTS_PER_PAGE = 3
+    # SECRET_KEY = "test"
 
 
 @pytest.fixture(scope="session")

@@ -1,8 +1,3 @@
-"""
-Social features E2E tests.
-Tests follow/unfollow functionality, user popups, and social interactions.
-"""
-
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -13,7 +8,6 @@ from conftest import login_user
 
 
 def test_followed_users_posts_appear_on_home_feed(browser, live_server):
-    """Test that followed users' posts appear on home feed."""
     login_user(browser, live_server)
 
     browser.get(f"{live_server}/user/{SEEDED_USERS['otheruser']['username']}")
@@ -35,7 +29,6 @@ def test_followed_users_posts_appear_on_home_feed(browser, live_server):
 
 
 def test_user_popup_hover_loads_and_displays_user_info(browser, live_server):
-    """Test that user popup (hover) loads and displays user info."""
     login_user(browser, live_server)
 
     browser.get(f"{live_server}/explore")
@@ -63,7 +56,6 @@ def test_user_popup_hover_loads_and_displays_user_info(browser, live_server):
 
 
 def test_follow_count_updates_after_following(browser, live_server):
-    """Test that follow count updates after following and unfollowing a user."""
     login_user(browser, live_server)
 
     browser.get(f"{live_server}/user/{SEEDED_USERS['otheruser']['username']}")

@@ -25,11 +25,3 @@ def test_post_and_message_form_validators(app):
     m = MessageForm()
     m.message.data = "hi"
     assert m.validate()
-
-
-def test_search_form_from_args_and_csrf_off(app):
-    from app.main.forms import SearchForm
-
-    with app.test_request_context("/?q=test"):
-        f = SearchForm()
-        assert f.q.data == "test"

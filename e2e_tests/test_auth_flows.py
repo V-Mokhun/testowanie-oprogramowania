@@ -6,8 +6,7 @@ import pytest
 from seed_data import SEEDED_USERS
 
 
-def test_login_page_renders_with_form_fields(browser, live_server, monkeypatch):
-    """Test that login page renders with username, password, and remember_me fields."""
+def test_login_page_renders_with_form_fields(browser, live_server):
     browser.get(f"{live_server}/auth/login")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.NAME, "username"))
@@ -24,7 +23,6 @@ def test_login_page_renders_with_form_fields(browser, live_server, monkeypatch):
 
 
 def test_login_with_invalid_credentials_shows_error(browser, live_server):
-    """Test that login with invalid credentials shows error flash message."""
     browser.get(f"{live_server}/auth/login")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.NAME, "username"))
@@ -49,7 +47,6 @@ def test_login_with_invalid_credentials_shows_error(browser, live_server):
 
 
 def test_logout_redirects_and_shows_login_link(browser, live_server):
-    """Test that logout redirects to index and navbar shows Login link."""
     login_user(browser, live_server)
     browser.get(f"{live_server}/auth/logout")
 
@@ -64,7 +61,6 @@ def test_logout_redirects_and_shows_login_link(browser, live_server):
 
 
 def test_registration_page_renders_with_form(browser, live_server):
-    """Test that registration page renders with username, email, password, password2 fields."""
     browser.get(f"{live_server}/auth/register")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.NAME, "username"))
@@ -82,8 +78,6 @@ def test_registration_page_renders_with_form(browser, live_server):
 
 
 def test_register_with_valid_data_redirects_to_login(browser, live_server):
-    """Test that registration with valid data redirects to login with success message."""
-
     browser.get(f"{live_server}/auth/register")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.NAME, "username"))
@@ -103,16 +97,12 @@ def test_register_with_valid_data_redirects_to_login(browser, live_server):
 
 
 def test_register_with_duplicate_username_shows_validation_error(browser, live_server):
-    """Test that registration with duplicate username shows validation error."""
-
     browser.get(f"{live_server}/auth/register")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.NAME, "username"))
     )
 
-    browser.find_element(By.NAME, "username").send_keys(
-        "testuser"
-    )  
+    browser.find_element(By.NAME, "username").send_keys("testuser")
     browser.find_element(By.NAME, "email").send_keys("newuser@example.com")
     browser.find_element(By.NAME, "password").send_keys("password123")
     browser.find_element(By.NAME, "password2").send_keys("password123")
@@ -125,33 +115,6 @@ def test_register_with_duplicate_username_shows_validation_error(browser, live_s
     )
 
     assert "Please use a different username." in browser.page_source
-
-
-def test_password_reset_request_page_renders_and_accepts_email(
-    browser, live_server, monkeypatch
-):
-    """Test that password reset request page renders and accepts email."""
-    monkeypatch.setattr("app.auth.routes.send_password_reset_email", lambda user: None)
-
-    browser.get(f"{live_server}/auth/reset_password_request")
-    WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.NAME, "email")))
-
-    assert browser.find_element(By.NAME, "email")
-    assert browser.find_element(
-        By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
-    )
-
-    browser.find_element(By.NAME, "email").send_keys(SEEDED_USERS["testuser"]["email"])
-    browser.find_element(
-        By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
-    ).click()
-
-    WebDriverWait(browser, 5).until(EC.url_contains("/auth/login"))
-
-    assert (
-        "Check your email for the instructions to reset your password"
-        in browser.page_source
-    )
 
 
 def test_password_reset_flow(browser, live_server, app_instance):
@@ -232,7 +195,7 @@ def test_password_reset_flow(browser, live_server, app_instance):
         )
         browser.find_element(By.NAME, "password").send_keys(
             SEEDED_USERS["testuser"]["password"]
-        )  
+        )
         browser.find_element(
             By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
         ).click()

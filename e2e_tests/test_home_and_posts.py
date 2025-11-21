@@ -85,6 +85,8 @@ def test_pagination_links_render_when_multiple_pages(browser, live_server):
 
     create_post(browser, live_server, post_body="pagination_test_post")
 
+    create_post(browser, live_server, post_body="pagination_test_post_2")
+
     browser.get(f"{live_server}/explore")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.TAG_NAME, "body"))

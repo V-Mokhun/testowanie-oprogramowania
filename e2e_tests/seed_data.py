@@ -30,7 +30,6 @@ SEEDED_USERS = {
 }
 
 def seed_test_data(app=None):
-    """Create test data for E2E tests."""
     from config import Config
 
     if app is None:

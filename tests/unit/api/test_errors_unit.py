@@ -1,4 +1,4 @@
-def test_error_response_and_bad_request_shape(app):
+def test_error_response_and_bad_request(app):
     from app.api import errors as err
 
     payload, status = err.error_response(404, "missing")
@@ -9,7 +9,7 @@ def test_error_response_and_bad_request_shape(app):
     assert status == 400 and payload["message"] == "nope"
 
 
-def test_http_exception_handler_returns_json(app):
+def test_http_exception_handler(app):
     from app.api import errors as err
 
     class E(Exception):
