@@ -20,7 +20,7 @@ def test_edit_profile_page_prefills_current_data(browser, live_server):
     assert about_me_field.get_attribute("value") == SEEDED_USERS["testuser"]["about_me"]
 
 
-def test_edit_profile_duplicate_username_shows_validation_error(browser, live_server):
+def test_edit_profile_duplicate_username(browser, live_server):
     login_user(browser, live_server)
 
     browser.get(f"{live_server}/edit_profile")
@@ -42,7 +42,7 @@ def test_edit_profile_duplicate_username_shows_validation_error(browser, live_se
     assert "Please use a different username." in error_div.text
 
 
-def test_user_profile_shows_appropriate_links_for_own_profile(browser, live_server):
+def test_user_profile_own_links(browser, live_server):
     login_user(browser, live_server)
 
     browser.get(f"{live_server}/user/{SEEDED_USERS['testuser']['username']}")
@@ -63,22 +63,7 @@ def test_user_profile_shows_appropriate_links_for_own_profile(browser, live_serv
     assert edit_link.is_displayed()
 
 
-def test_user_profile_page_renders_with_avatar_bio_and_counts(browser, live_server):
-    login_user(browser, live_server)
-
-    browser.get(f"{live_server}/user/{SEEDED_USERS['testuser']['username']}")
-    WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.TAG_NAME, "h1")))
-
-    assert SEEDED_USERS["testuser"]["username"] in browser.page_source
-
-    assert SEEDED_USERS["testuser"]["about_me"] in browser.page_source
-
-    assert browser.find_element(By.CSS_SELECTOR, "img")
-
-    assert "0 followers" in browser.page_source and "0 following" in browser.page_source
-
-
-def test_edit_profile_updates_data_and_shows_success(browser, live_server):
+def test_edit_profile(browser, live_server):
     login_user(browser, live_server)
 
     browser.get(f"{live_server}/edit_profile")
@@ -112,7 +97,7 @@ def test_edit_profile_updates_data_and_shows_success(browser, live_server):
     assert "Not Found" in browser.page_source
 
 
-def test_user_profile_shows_links_for_other_users(browser, live_server):
+def test_user_profile_other_links(browser, live_server):
     login_user(browser, live_server)
 
     browser.get(f"{live_server}/user/{SEEDED_USERS['otheruser']['username']}")

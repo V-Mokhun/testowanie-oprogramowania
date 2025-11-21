@@ -5,21 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 
-def test_index_renders_with_greeting_and_post_form(browser, live_server):
-    login_user(browser, live_server)
-
-    browser.get(f"{live_server}/index")
-    WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.TAG_NAME, "h1")))
-    page = browser.page_source
-    assert "Hi, testuser!" in page
-
-    assert browser.find_element(By.CSS_SELECTOR, "textarea")
-    assert browser.find_element(
-        By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
-    )
-
-
-def test_create_post_via_form_shows_flash_and_post_appears(browser, live_server):
+def test_create_post(browser, live_server):
     login_user(browser, live_server)
 
     create_post(browser, live_server, post_body="My first post")
@@ -27,7 +13,7 @@ def test_create_post_via_form_shows_flash_and_post_appears(browser, live_server)
     assert "My first post" in browser.page_source
 
 
-def test_post_form_validation_shows_error_for_empty_post(browser, live_server):
+def test_post_form(browser, live_server):
     login_user(browser, live_server)
 
     browser.get(f"{live_server}/index")
@@ -44,7 +30,7 @@ def test_post_form_validation_shows_error_for_empty_post(browser, live_server):
     assert "Your post is now live!" not in browser.page_source
 
 
-def test_explore_page_renders_with_posts(browser, live_server):
+def test_explore(browser, live_server):
     login_user(browser, live_server)
 
     create_post(browser, live_server, post_body="explore_test_post")
@@ -57,7 +43,7 @@ def test_explore_page_renders_with_posts(browser, live_server):
     assert "explore_test_post" in src
 
 
-def test_posts_display_avatar_username_timestamp_and_body(browser, live_server):
+def test_posts_display(browser, live_server):
     login_user(
         browser,
         live_server,

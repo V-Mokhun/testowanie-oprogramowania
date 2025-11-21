@@ -28,7 +28,7 @@ def test_followed_users_posts_appear_on_home_feed(browser, live_server):
     assert "Other user post" in browser.page_source
 
 
-def test_user_popup_hover_loads_and_displays_user_info(browser, live_server):
+def test_user_popup(browser, live_server):
     login_user(browser, live_server)
 
     browser.get(f"{live_server}/explore")
@@ -51,7 +51,6 @@ def test_user_popup_hover_loads_and_displays_user_info(browser, live_server):
             assert popup.is_displayed()
 
             popup_text = popup.text
-            print("popup_text", popup_text)
             assert len(popup_text) > 0
 
 

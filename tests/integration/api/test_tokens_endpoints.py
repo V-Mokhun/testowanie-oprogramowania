@@ -1,43 +1,33 @@
 from base64 import b64encode
+from app import db
+from app.models import User
 
 
-def test_post_tokens_success_and_unauthorized(client):
-    from app.api import auth as auth_mod
-    from app import db
+def test_post_tokens(client):
+    user = User(username="u", email="u@example.com")
+    user.set_password("testpass")
+    db.session.add(user)
+    db.session.commit()
 
-    class U:
-        def get_token(self):
-            return "abc"
-
-    auth_mod.basic_auth.verify_password_callback = lambda u, p: U()
-    db.session.commit.return_value = None
-
-    cred = b64encode(b"user:pass").decode("utf-8")
+    cred = b64encode(b"u:testpass").decode("utf-8")
     r = client.post("/api/tokens", headers={"Authorization": f"Basic {cred}"})
     assert r.status_code == 200
     assert "token" in r.get_json()
 
-    auth_mod.basic_auth.verify_password_callback = lambda u, p: None
     r2 = client.post("/api/tokens")
     assert r2.status_code == 401
 
+    wrong_cred = b64encode(b"u:wrongpass").decode("utf-8")
+    r3 = client.post("/api/tokens", headers={"Authorization": f"Basic {wrong_cred}"})
+    assert r3.status_code == 401
 
-def test_delete_tokens_success_and_unauthorized(client):
-    from app.api import auth as auth_mod
-    from app import db
 
-    called = {"revoked": False}
+def test_delete_tokens(client, user, auth_headers):
+    r = client.delete("/api/tokens", headers=auth_headers)
+    assert r.status_code == 204
 
-    class U:
-        def revoke_token(self):
-            called["revoked"] = True
-
-    auth_mod.token_auth.verify_token_callback = lambda t: U()
-    db.session.commit.return_value = None
-
-    r = client.delete("/api/tokens", headers={"Authorization": "Bearer abc"})
-    assert r.status_code == 204 and called["revoked"]
-
-    auth_mod.token_auth.verify_token_callback = lambda t: None
     r2 = client.delete("/api/tokens")
     assert r2.status_code == 401
+
+    r3 = client.delete("/api/tokens", headers={"Authorization": "Bearer invalid-token"})
+    assert r3.status_code == 401

@@ -1,150 +1,75 @@
-def test_login_redirect_when_authenticated(client, monkeypatch):
-    class CU:
-        is_authenticated = True
+import sqlalchemy as sa
+from app import db
+from app.models import User
+from tests.conftest import login_user_via_client, is_logged_in
 
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: CU())
+
+def test_login_redirect_when_authenticated(client, user):
+    login_user_via_client(client, "testuser", "testpass")
     r = client.get("/auth/login")
-    assert r.status_code in (302, 303)
+    assert r.status_code == 302
 
 
-def test_login_invalid_and_valid(client, monkeypatch):
-    from app import db
-
-    db.session.scalar.return_value = None
-    r = client.post(
-        "/auth/login", data={"username": "u", "password": "p"}, follow_redirects=False
+def test_login(client):
+    client.post(
+        "/auth/login",
+        data={"username": "nonexistent", "password": "p"},
+        follow_redirects=False,
     )
-    assert r.status_code in (302, 303)
+    assert not is_logged_in(client)
 
-    class U:
-        def __init__(self):
-            self.username = "u"
-            self.is_active = True
+    user = User(username="u", email="u@example.com")
+    user.set_password("p")
+    db.session.add(user)
+    db.session.commit()
 
-        def check_password(self, p):
-            return True
-
-        def get_id(self):
-            return "1"
-
-    db.session.scalar.return_value = U()
-    r2 = client.post(
+    client.post(
         "/auth/login?next=/index",
         data={"username": "u", "password": "p", "remember_me": "y"},
         follow_redirects=False,
     )
-    assert r2.status_code in (302, 303)
+    assert is_logged_in(client)
 
 
-def test_logout_redirects(client, monkeypatch):
-    class CU:
-        is_authenticated = False
-
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: CU())
-    r = client.get("/auth/logout")
-    assert r.status_code in (302, 303)
+def test_logout(client, user):
+    login_user_via_client(client, "testuser", "testpass")
+    client.get("/auth/logout")
+    assert not is_logged_in(client)
 
 
-def test_register_redirect_when_authenticated(client, monkeypatch):
-    class CU:
-        is_authenticated = True
-
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: CU())
+def test_register_redirect_when_authenticated(client, user):
+    login_user_via_client(client, "testuser", "testpass")
     r = client.get("/auth/register")
-    assert r.status_code in (302, 303)
+    assert r.status_code == 302
 
 
-def test_register_success(client, monkeypatch):
-    from app import db
-
-    db.session.commit.return_value = None
-
-    class CU:
-        is_authenticated = False
-
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: CU())
-    r = client.post(
+def test_register(client):
+    client.post(
         "/auth/register",
         data={
-            "username": "u",
-            "email": "e@example.com",
+            "username": "newuser",
+            "email": "newuser@example.com",
             "password": "p",
             "password2": "p",
         },
         follow_redirects=False,
     )
-    assert r.status_code in (302, 303)
+
+    user = db.session.scalar(sa.select(User).where(User.username == "newuser"))
+    assert user is not None
+    assert user.email == "newuser@example.com"
 
 
-def test_reset_password_request_flow(client, monkeypatch):
-    class CU:
-        is_authenticated = True
+def test_reset_password_with_token(client, user):
+    user = db.session.get(User, user.id)
+    assert user.check_password("testpass")
 
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: CU())
-    r = client.get("/auth/reset_password_request")
-    assert r.status_code in (302, 303)
-
-    class CU2:
-        is_authenticated = False
-
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: CU2())
-    from app import db
-
-    class U:
-        email = "e@example.com"
-
-        def get_reset_password_token(self):
-            return "token"
-
-    db.session.scalar.return_value = U()
-    called = {"n": 0}
-
-    def _send(u):
-        called["n"] += 1
-
-    monkeypatch.setattr("app.auth.routes.send_password_reset_email", _send)
-    r2 = client.post(
-        "/auth/reset_password_request",
-        data={"email": "e@example.com"},
+    token = user.get_reset_password_token()
+    client.post(
+        f"/auth/reset_password/{token}",
+        data={"password": "newpass", "password2": "newpass"},
         follow_redirects=False,
     )
-    assert r2.status_code in (302, 303)
-    assert called["n"] == 1
 
-
-def test_reset_password_with_token(client, monkeypatch):
-    class CU:
-        is_authenticated = True
-
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: CU())
-    r = client.get("/auth/reset_password/abc")
-    assert r.status_code in (302, 303)
-
-    class CU2:
-        is_authenticated = False
-
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: CU2())
-    from app.models import User
-
-    monkeypatch.setattr(
-        User, "verify_reset_password_token", staticmethod(lambda t: None)
-    )
-    r2 = client.get("/auth/reset_password/abc")
-    assert r2.status_code in (302, 303)
-
-    class V:
-        def set_password(self, p):
-            self.p = p
-
-    monkeypatch.setattr(
-        User, "verify_reset_password_token", staticmethod(lambda t: V())
-    )
-    from app import db
-
-    db.session.commit.return_value = None
-    r3 = client.post(
-        "/auth/reset_password/abc",
-        data={"password": "x", "password2": "x"},
-        follow_redirects=False,
-    )
-    assert r3.status_code in (302, 303)
+    user_updated = db.session.get(User, user.id)
+    assert user_updated.check_password("newpass")

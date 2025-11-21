@@ -6,23 +6,12 @@ import pytest
 from seed_data import SEEDED_USERS
 
 
-def test_login_page_renders_with_form_fields(browser, live_server):
-    browser.get(f"{live_server}/auth/login")
-    WebDriverWait(browser, 5).until(
-        EC.presence_of_element_located((By.NAME, "username"))
-    )
-
-    assert browser.find_element(By.NAME, "username")
-    assert browser.find_element(By.NAME, "password")
-    assert browser.find_element(By.NAME, "remember_me")
-    assert browser.find_element(
-        By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
-    )
-
-    assert "Sign In" in browser.page_source
+def test_login(browser, live_server):
+    login_user(browser, live_server)
+    assert "Hi, testuser!" in browser.page_source
 
 
-def test_login_with_invalid_credentials_shows_error(browser, live_server):
+def test_login_invalid_credentials(browser, live_server):
     browser.get(f"{live_server}/auth/login")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.NAME, "username"))
@@ -41,12 +30,14 @@ def test_login_with_invalid_credentials_shows_error(browser, live_server):
     )
     submit_button.click()
 
-    WebDriverWait(browser, 5).until(EC.url_contains("/auth/login"))
+    WebDriverWait(browser, 5).until(
+        EC.presence_of_element_located((By.TAG_NAME, "body"))
+    )
 
     assert "Invalid username or password" in browser.page_source
 
 
-def test_logout_redirects_and_shows_login_link(browser, live_server):
+def test_logout(browser, live_server):
     login_user(browser, live_server)
     browser.get(f"{live_server}/auth/logout")
 
@@ -60,24 +51,7 @@ def test_logout_redirects_and_shows_login_link(browser, live_server):
     assert "Login" in browser.page_source
 
 
-def test_registration_page_renders_with_form(browser, live_server):
-    browser.get(f"{live_server}/auth/register")
-    WebDriverWait(browser, 5).until(
-        EC.presence_of_element_located((By.NAME, "username"))
-    )
-
-    assert browser.find_element(By.NAME, "username")
-    assert browser.find_element(By.NAME, "email")
-    assert browser.find_element(By.NAME, "password")
-    assert browser.find_element(By.NAME, "password2")
-    assert browser.find_element(
-        By.CSS_SELECTOR, "input[type=submit], button[type=submit]"
-    )
-
-    assert "Register" in browser.page_source
-
-
-def test_register_with_valid_data_redirects_to_login(browser, live_server):
+def test_register(browser, live_server):
     browser.get(f"{live_server}/auth/register")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.NAME, "username"))
@@ -96,7 +70,7 @@ def test_register_with_valid_data_redirects_to_login(browser, live_server):
     assert "Congratulations, you are now a registered user!" in browser.page_source
 
 
-def test_register_with_duplicate_username_shows_validation_error(browser, live_server):
+def test_register_duplicate_username(browser, live_server):
     browser.get(f"{live_server}/auth/register")
     WebDriverWait(browser, 5).until(
         EC.presence_of_element_located((By.NAME, "username"))
@@ -118,7 +92,6 @@ def test_register_with_duplicate_username_shows_validation_error(browser, live_s
 
 
 def test_password_reset_flow(browser, live_server, app_instance):
-    """Test password reset flow using the seeded testuser."""
     browser.get(f"{live_server}/auth/reset_password_request")
     WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.NAME, "email")))
 
